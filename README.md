@@ -31,6 +31,9 @@ The GUI is implemented in Python with PySimpleGUI in a dark theme.
 - Adds tracks to Spotify playlists with automatic splitting after 10,000 items.
 - Falls back to audD for audio recognition when no match is found.
 - Uses fuzzy matching for approximate matches.
+- Caches Spotify search results to speed up future runs.
+- Handles API rate limits with a visible countdown in the GUI.
+- Skips duplicate tracks across playlists.
 - Generates a simple HTML report listing processed files.
 
 This is a minimal proof-of-concept implementation and does not include all

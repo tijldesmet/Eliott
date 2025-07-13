@@ -9,28 +9,64 @@ from pathlib import Path
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3, ID3NoHeaderError
 from spotipy import Spotify, SpotifyOAuth
+from spotipy.exceptions import SpotifyException
 from fuzzywuzzy import fuzz
 
 # Constants
 MAX_PLAYLIST_SIZE = 10000
-CACHE_PATH = os.path.join(os.path.expanduser("~"), ".cache_mp3")
+CACHE_DIR = Path(os.path.expanduser("~")) / ".cache_mp3"
+CACHE_DIR.mkdir(exist_ok=True)
+CACHE_FILE = CACHE_DIR / "cache.json"
 
 
 def get_spotify_client():
-    return Spotify(auth_manager=SpotifyOAuth(scope="playlist-modify-public", cache_path=CACHE_PATH))
+    return Spotify(auth_manager=SpotifyOAuth(scope="playlist-modify-public", cache_path=str(CACHE_DIR / "spotify")))
+
+
+def load_cache():
+    if CACHE_FILE.exists():
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_cache(cache):
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(cache, f)
+
+
+CACHE = load_cache()
 
 
 def search_spotify(sp, artist, title):
+    key = f"{artist}|{title}".lower()
+    if key in CACHE:
+        return {'id': CACHE[key]}
     query = f"artist:{artist} track:{title}"
-    results = sp.search(q=query, type="track", limit=1)
+    results = spotify_request(sp.search, q=query, type="track", limit=1)
     items = results.get("tracks", {}).get("items")
     if items:
+        CACHE[key] = items[0]['id']
         return items[0]
     return None
 
 
+def spotify_request(func, *args, **kwargs):
+    while True:
+        try:
+            return func(*args, **kwargs)
+        except SpotifyException as e:
+            if e.http_status == 429:
+                wait = int(e.headers.get("Retry-After", 1))
+                for remaining in range(wait, 0, -1):
+                    window["STATUS"].update(f"Rate limited, waiting {remaining}s")
+                    time.sleep(1)
+                continue
+            raise
+
+
 def fuzzy_search_spotify(sp, query):
-    results = sp.search(q=query, type="track", limit=5)
+    results = spotify_request(sp.search, q=query, type="track", limit=5)
     items = results.get("tracks", {}).get("items", [])
     best = None
     best_score = 0
@@ -39,7 +75,8 @@ def fuzzy_search_spotify(sp, query):
         if score > best_score:
             best_score = score
             best = item
-    if best_score > 67:
+    if best_score > 67 and best:
+        CACHE[query.lower()] = best['id']
         return best
     return None
 
@@ -59,23 +96,32 @@ def sanitize_filename(name: str) -> str:
     return ''.join(c for c in name if c.isalnum() or c in (' ', '-', '_')).title()
 
 
-def ensure_playlist(sp, user_id, base_name):
-    playlists = sp.user_playlists(user_id)
-    existing = [p for p in playlists['items'] if p['name'].startswith(base_name)]
-    index = 1
-    while True:
-        name = f"{base_name} {index}" if index > 1 else base_name
-        match = next((p for p in existing if p['name'] == name), None)
-        if match and sp.playlist(match['id'])['tracks']['total'] < MAX_PLAYLIST_SIZE:
-            return match['id']
-        if not match:
-            playlist = sp.user_playlist_create(user_id, name)
-            return playlist['id']
-        index += 1
+def ensure_playlists(sp, user_id, base_name):
+    playlists_data = spotify_request(sp.user_playlists, user_id)
+    relevant = [
+        {
+            'id': p['id'],
+            'name': p['name'],
+            'count': p['tracks']['total']
+        }
+        for p in playlists_data['items'] if p['name'].startswith(base_name)
+    ]
+    if not relevant:
+        p = spotify_request(sp.user_playlist_create, user_id, base_name)
+        relevant.append({'id': p['id'], 'name': p['name'], 'count': 0})
+    relevant.sort(key=lambda x: x['name'])
+    return relevant
 
 
-def add_to_playlist(sp, playlist_id, track_id):
-    sp.playlist_add_items(playlist_id, [track_id])
+def add_to_playlist(sp, playlists, user_id, base_name, track_id):
+    current = playlists[-1]
+    if current['count'] >= MAX_PLAYLIST_SIZE:
+        index = len(playlists) + 1
+        p = spotify_request(sp.user_playlist_create, user_id, f"{base_name} {index}")
+        playlists.append({'id': p['id'], 'name': p['name'], 'count': 0})
+        current = playlists[-1]
+    spotify_request(sp.playlist_add_items, current['id'], [track_id])
+    current['count'] += 1
 
 
 def write_html_report(entries, out_path):
@@ -102,12 +148,13 @@ def process_files(values):
 
     sp = get_spotify_client()
     user_id = sp.me()['id']
-    playlist_id = ensure_playlist(sp, user_id, 'Spotify')
+    playlists = ensure_playlists(sp, user_id, 'Spotify')
 
     napster_playlist = napster_dir / 'Napster.m3u'
     entries = []
+    added_tracks = set()
 
-    files = list(src.glob('*.mp3'))
+    files = [f for f in src.iterdir() if f.suffix.lower() == '.mp3']
     total = len(files)
 
     for i, file in enumerate(files, 1):
@@ -142,9 +189,12 @@ def process_files(values):
                         match = fuzzy_search_spotify(sp, f"{ra} {rt}")
                     artist = ra
                     title = rt
+
         if match:
             track_id = match['id']
-            add_to_playlist(sp, playlist_id, track_id)
+            if track_id not in added_tracks:
+                add_to_playlist(sp, playlists, user_id, 'Spotify', track_id)
+                added_tracks.add(track_id)
             dest = spotify_dir / file.name
             dest = dest.with_name(sanitize_filename(dest.stem) + dest.suffix)
             file.rename(dest)
@@ -159,6 +209,7 @@ def process_files(values):
 
     report = out / 'report.html'
     write_html_report(entries, report)
+    save_cache(CACHE)
     sg.popup('Done', title='Finished')
 
 
