@@ -1,10 +1,8 @@
 # MP3 Playlist Organizer
 
-This tool scans a directory for MP3 files, matches them with Spotify tracks, and
-organizes files into playlists. Unmatched tracks are moved to a "Napster"
-folder with a local playlist.
+This project helps organize a collection of MP3 files and create Spotify playlists. Files that cannot be matched are moved to a `Napster` folder with a local playlist.
 
-The GUI is implemented in Python with PySimpleGUI in a dark theme.
+The application uses a dark themed PySimpleGUI interface and can be turned into a Windows executable with PyInstaller.
 
 ## Setup
 
@@ -12,7 +10,7 @@ The GUI is implemented in Python with PySimpleGUI in a dark theme.
    ```bash
    pip install -r requirements.txt
    ```
-2. Set environment variables for API credentials:
+2. Provide API credentials via environment variables:
    - `SPOTIPY_CLIENT_ID`
    - `SPOTIPY_CLIENT_SECRET`
    - `SPOTIPY_REDIRECT_URI`
@@ -23,18 +21,32 @@ The GUI is implemented in Python with PySimpleGUI in a dark theme.
    python src/main.py
    ```
 
+To build a standalone executable on Windows:
+```bash
+pyinstaller --onefile -w src/main.py
+```
+The resulting `dist/main.exe` can be used directly.
+
+## Project Structure
+
+```
+mp3organizer/
+    __init__.py
+    audd.py          # audD.io helper
+    core.py          # file processing logic
+    gui.py           # PySimpleGUI interface
+    report.py        # HTML report generation
+    spotify.py       # Spotify API helpers
+    utils.py         # cache and filename helpers
+src/
+    main.py          # entry point
+```
+
 ## Features
 
 - Choose source and output folders.
-- Creates `Spotify` and `Napster` subfolders in the output folder if they do not
-  exist.
-- Adds tracks to Spotify playlists with automatic splitting after 10,000 items.
-- Falls back to audD for audio recognition when no match is found.
-- Uses fuzzy matching for approximate matches.
-- Caches Spotify search results to speed up future runs.
-- Handles API rate limits with a visible countdown in the GUI.
-- Skips duplicate tracks across playlists.
-- Generates a simple HTML report listing processed files.
-
-This is a minimal proof-of-concept implementation and does not include all
-error handling or optimizations.
+- Creates `Spotify` and `Napster` subfolders if needed.
+- Automatically splits Spotify playlists after 10,000 items.
+- Fuzzy matching and audD fallback for track recognition.
+- Caches Spotify search results and handles API rate limits.
+- Generates an HTML report of processed files.
