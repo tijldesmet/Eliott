@@ -5,6 +5,7 @@ from .core import process
 
 
 def main():
+    sg.theme('DarkGrey13')
     layout = [
         [sg.Text('Source Folder'), sg.Input(key='SRC'), sg.FolderBrowse()],
         [sg.Text('Output Folder'), sg.Input(key='DST'), sg.FolderBrowse()],
@@ -13,7 +14,7 @@ def main():
         [sg.Text('', size=(60, 1), key='STATUS')],
     ]
 
-    window = sg.Window('MP3 Organizer', layout, finalize=True, theme='DarkGrey13')
+    window = sg.Window('MP3 Organizer', layout, finalize=True)
 
     while True:
         event, values = window.read()

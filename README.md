@@ -48,5 +48,9 @@ src/
 - Creates `Spotify` and `Napster` subfolders if needed.
 - Automatically splits Spotify playlists after 10,000 items.
 - Fuzzy matching and audD fallback for track recognition.
-- Caches Spotify search results and handles API rate limits.
+- Caches Spotify search results and handles API rate limits with a visible
+  countdown while waiting.
+- Duplicate tracks are skipped and Spotify playlists split every 10,000 songs.
+- ID3 tags and filenames are corrected when recognized through audD.
+- A progress bar shows percentage and estimated remaining time.
 - Generates an HTML report of processed files.

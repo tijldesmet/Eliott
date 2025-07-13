@@ -5,6 +5,7 @@ from typing import Optional
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
 
+import time
 from .utils import load_cache, save_cache, sanitize_filename
 from .spotify import (
     get_client,
@@ -21,7 +22,13 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
     cache = load_cache()
     sp = get_client()
     user_id = sp.me()['id']
-    playlists = ensure_playlists(sp, user_id, 'Spotify')
+
+    def on_wait(remaining: int):
+        if window:
+            window['STATUS'].update(f'Rate limit hit, waiting {remaining}s...')
+            window.refresh()
+
+    playlists = ensure_playlists(sp, user_id, 'Spotify', on_wait=on_wait)
 
     spotify_dir = dst / 'Spotify'
     napster_dir = dst / 'Napster'
@@ -31,14 +38,20 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
 
     files = [f for f in src.iterdir() if f.suffix.lower() == '.mp3']
     total = len(files)
+    start_time = time.time()
 
     entries = []
     added_tracks = set()
 
     for i, file in enumerate(files, 1):
         if window:
+            elapsed = time.time() - start_time
+            est_total = (elapsed / i) * total if i else 0
+            remaining = max(0, int(est_total - elapsed))
             window['PROG'].update(current_count=i, max=total)
-            window['STATUS'].update(f'Processing {file.name} ({i}/{total})')
+            window['STATUS'].update(
+                f'Processing {file.name} ({i}/{total}) - ETA {remaining}s'
+            )
 
         try:
             tags = EasyID3(file)
@@ -55,31 +68,39 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
 
         match = None
         if artist and title:
-            match = search(sp, cache, artist, title)
+            match = search(sp, cache, artist, title, on_wait=on_wait)
             if not match:
-                match = fuzzy_search(sp, cache, f'{artist} {title}')
+                match = fuzzy_search(sp, cache, f'{artist} {title}', on_wait=on_wait)
         if not match:
             api_key = os.getenv('AUDD_API_KEY')
             if api_key:
                 ra, rt = recognize(str(file), api_key)
                 if ra and rt:
-                    match = search(sp, cache, ra, rt)
+                    match = search(sp, cache, ra, rt, on_wait=on_wait)
                     if not match:
-                        match = fuzzy_search(sp, cache, f'{ra} {rt}')
+                        match = fuzzy_search(sp, cache, f'{ra} {rt}', on_wait=on_wait)
                     artist = ra
                     title = rt
+                    try:
+                        tags = EasyID3(file)
+                    except ID3NoHeaderError:
+                        tags = EasyID3()
+                    tags['artist'] = artist.title()
+                    tags['title'] = title.title()
+                    tags.save(file)
 
         if match:
             track_id = match['id']
             if track_id not in added_tracks:
-                add_to_playlist(sp, playlists, user_id, 'Spotify', track_id)
+                add_to_playlist(sp, playlists, user_id, 'Spotify', track_id, on_wait=on_wait)
                 added_tracks.add(track_id)
-            dest = spotify_dir / file.name
-            dest = dest.with_name(sanitize_filename(dest.stem) + dest.suffix)
+            dest_name = sanitize_filename(f"{artist} - {title}") + file.suffix
+            dest = spotify_dir / dest_name
             file.rename(dest)
             entries.append({'artist': artist or '', 'title': title or '', 'dest': 'Spotify'})
         else:
-            dest = napster_dir / file.name
+            dest_name = sanitize_filename(file.stem) + file.suffix
+            dest = napster_dir / dest_name
             file.rename(dest)
             with open(napster_playlist, 'a', encoding='utf-8') as m3u:
                 m3u.write(dest.name + '\n')
