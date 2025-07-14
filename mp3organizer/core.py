@@ -5,7 +5,7 @@ from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
 
 import time
-from .utils import load_cache, save_cache, sanitize_filename
+from .utils import load_cache, save_cache, sanitize_filename, unique_path
 from .spotify import (
     get_client,
     search,
@@ -96,7 +96,7 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
                 add_to_playlist(sp, playlists, user_id, 'Spotify', track_id, on_wait=on_wait)
                 added_tracks.add(track_id)
             dest_name = sanitize_filename(f"{artist} - {title}") + file.suffix
-            dest = spotify_dir / dest_name
+            dest = unique_path(spotify_dir / dest_name)
             file.rename(dest)
             rel_path = dest.relative_to(dst)
             entries.append(
@@ -112,7 +112,7 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             )
         else:
             dest_name = sanitize_filename(file.stem) + file.suffix
-            dest = napster_dir / dest_name
+            dest = unique_path(napster_dir / dest_name)
             file.rename(dest)
             with open(napster_playlist, 'a', encoding='utf-8') as m3u:
                 m3u.write(dest.name + '\n')
