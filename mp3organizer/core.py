@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -57,8 +56,12 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             tags = EasyID3(file)
             artist = tags.get('artist', [None])[0]
             title = tags.get('title', [None])[0]
+            album = tags.get('album', [''])[0]
+            year = tags.get('date', [''])[0]
+            genre = tags.get('genre', [''])[0]
         except ID3NoHeaderError:
             artist = title = None
+            album = year = genre = ''
 
         if not artist or not title:
             parts = file.stem.split('-')
@@ -72,22 +75,20 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             if not match:
                 match = fuzzy_search(sp, cache, f'{artist} {title}', on_wait=on_wait)
         if not match:
-            api_key = os.getenv('AUDD_API_KEY')
-            if api_key:
-                ra, rt = recognize(str(file), api_key)
-                if ra and rt:
-                    match = search(sp, cache, ra, rt, on_wait=on_wait)
-                    if not match:
-                        match = fuzzy_search(sp, cache, f'{ra} {rt}', on_wait=on_wait)
-                    artist = ra
-                    title = rt
-                    try:
-                        tags = EasyID3(file)
-                    except ID3NoHeaderError:
-                        tags = EasyID3()
-                    tags['artist'] = artist.title()
-                    tags['title'] = title.title()
-                    tags.save(file)
+            ra, rt = recognize(str(file))
+            if ra and rt:
+                match = search(sp, cache, ra, rt, on_wait=on_wait)
+                if not match:
+                    match = fuzzy_search(sp, cache, f'{ra} {rt}', on_wait=on_wait)
+                artist = ra
+                title = rt
+                try:
+                    tags = EasyID3(file)
+                except ID3NoHeaderError:
+                    tags = EasyID3()
+                tags['artist'] = artist.title()
+                tags['title'] = title.title()
+                tags.save(file)
 
         if match:
             track_id = match['id']
@@ -97,17 +98,40 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             dest_name = sanitize_filename(f"{artist} - {title}") + file.suffix
             dest = unique_path(spotify_dir / dest_name)
             file.rename(dest)
-            entries.append({'artist': artist or '', 'title': title or '', 'dest': 'Spotify'})
+            rel_path = dest.relative_to(dst)
+            entries.append(
+                {
+                    'artist': artist or '',
+                    'title': title or '',
+                    'album': album,
+                    'year': year,
+                    'genre': genre,
+                    'dest': 'Spotify',
+                    'path': str(rel_path),
+                }
+            )
         else:
             dest_name = sanitize_filename(file.stem) + file.suffix
             dest = unique_path(napster_dir / dest_name)
             file.rename(dest)
             with open(napster_playlist, 'a', encoding='utf-8') as m3u:
                 m3u.write(dest.name + '\n')
-            entries.append({'artist': artist or '', 'title': title or '', 'dest': 'Napster'})
+            rel_path = dest.relative_to(dst)
+            entries.append(
+                {
+                    'artist': artist or '',
+                    'title': title or '',
+                    'album': album,
+                    'year': year,
+                    'genre': genre,
+                    'dest': 'Napster',
+                    'path': str(rel_path),
+                }
+            )
 
         if window:
             window.refresh()
 
     write_html_report(entries, dst / 'report.html')
     save_cache(cache)
+
