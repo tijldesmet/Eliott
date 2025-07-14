@@ -10,7 +10,7 @@ The application uses a dark themed PySimpleGUI interface and can be turned into 
    ```bash
    pip install -r requirements.txt
    ```
-2. Provide API credentials via environment variables:
+2. Provide API credentials via environment variables or the GUI settings dialog:
    - `SPOTIPY_CLIENT_ID`
    - `SPOTIPY_CLIENT_SECRET`
    - `SPOTIPY_REDIRECT_URI`
@@ -20,6 +20,8 @@ The application uses a dark themed PySimpleGUI interface and can be turned into 
    ```bash
    python src/main.py
    ```
+   Use the **Settings** button in the GUI to enter credentials if you have not
+   set the environment variables. Values are saved to `~/.mp3organizer_config`.
 
 To build a standalone executable on Windows:
 ```bash
