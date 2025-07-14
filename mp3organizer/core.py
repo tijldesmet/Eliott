@@ -56,8 +56,12 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             tags = EasyID3(file)
             artist = tags.get('artist', [None])[0]
             title = tags.get('title', [None])[0]
+            album = tags.get('album', [''])[0]
+            year = tags.get('date', [''])[0]
+            genre = tags.get('genre', [''])[0]
         except ID3NoHeaderError:
             artist = title = None
+            album = year = genre = ''
 
         if not artist or not title:
             parts = file.stem.split('-')
@@ -94,14 +98,36 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             dest_name = sanitize_filename(f"{artist} - {title}") + file.suffix
             dest = spotify_dir / dest_name
             file.rename(dest)
-            entries.append({'artist': artist or '', 'title': title or '', 'dest': 'Spotify'})
+            rel_path = dest.relative_to(dst)
+            entries.append(
+                {
+                    'artist': artist or '',
+                    'title': title or '',
+                    'album': album,
+                    'year': year,
+                    'genre': genre,
+                    'dest': 'Spotify',
+                    'path': str(rel_path),
+                }
+            )
         else:
             dest_name = sanitize_filename(file.stem) + file.suffix
             dest = napster_dir / dest_name
             file.rename(dest)
             with open(napster_playlist, 'a', encoding='utf-8') as m3u:
                 m3u.write(dest.name + '\n')
-            entries.append({'artist': artist or '', 'title': title or '', 'dest': 'Napster'})
+            rel_path = dest.relative_to(dst)
+            entries.append(
+                {
+                    'artist': artist or '',
+                    'title': title or '',
+                    'album': album,
+                    'year': year,
+                    'genre': genre,
+                    'dest': 'Napster',
+                    'path': str(rel_path),
+                }
+            )
 
         if window:
             window.refresh()

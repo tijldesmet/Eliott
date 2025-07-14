@@ -55,6 +55,17 @@ src/
 - Duplicate tracks are skipped and Spotify playlists split every 10,000 songs.
 - ID3 tags and filenames are corrected when recognized through audD.
 - A progress bar shows percentage and estimated remaining time.
+
+- Generates an HTML report of processed files including album, year and genre
+  metadata, and allows audio preview directly in the browser.
+
+### HTML Report
+
+After processing, a `report.html` file is created in the output folder. It lists
+each track with artist, title, album, year, genre and the destination folder.
+Every row also contains an embedded audio player so the resulting files can be
+played without leaving the browser.
+
 - Generates an HTML report of processed files.
 
 ## Running Tests
