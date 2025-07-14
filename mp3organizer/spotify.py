@@ -3,14 +3,32 @@ from spotipy import Spotify, SpotifyOAuth
 from spotipy.exceptions import SpotifyException
 from fuzzywuzzy import fuzz
 
-from .utils import CACHE_DIR
+import os
+
+from .utils import CACHE_DIR, load_config
 
 
 MAX_PLAYLIST_SIZE = 10000
 
 
 def get_client():
-    return Spotify(auth_manager=SpotifyOAuth(scope="playlist-modify-public", cache_path=str(CACHE_DIR / "spotify")))
+    cid = os.getenv("SPOTIPY_CLIENT_ID")
+    secret = os.getenv("SPOTIPY_CLIENT_SECRET")
+    redirect = os.getenv("SPOTIPY_REDIRECT_URI")
+    if not (cid and secret and redirect):
+        cfg = load_config()
+        cid = cid or cfg.get("SPOTIPY_CLIENT_ID")
+        secret = secret or cfg.get("SPOTIPY_CLIENT_SECRET")
+        redirect = redirect or cfg.get("SPOTIPY_REDIRECT_URI")
+    return Spotify(
+        auth_manager=SpotifyOAuth(
+            client_id=cid,
+            client_secret=secret,
+            redirect_uri=redirect,
+            scope="playlist-modify-public",
+            cache_path=str(CACHE_DIR / "spotify"),
+        )
+    )
 
 
 def spotify_request(func, *args, on_wait=None, **kwargs):
