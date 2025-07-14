@@ -56,3 +56,13 @@ src/
 - ID3 tags and filenames are corrected when recognized through audD.
 - A progress bar shows percentage and estimated remaining time.
 - Generates an HTML report of processed files.
+
+## Running Tests
+
+Install the dependencies and execute `pytest` from the project root:
+
+```bash
+pip install -r requirements.txt
+pytest
+```
+
