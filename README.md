@@ -10,7 +10,7 @@ The application uses a dark themed PySimpleGUI interface and can be turned into 
    ```bash
    pip install -r requirements.txt
    ```
-2. Provide API credentials via environment variables:
+2. Provide API credentials via environment variables or the GUI settings dialog:
    - `SPOTIPY_CLIENT_ID`
    - `SPOTIPY_CLIENT_SECRET`
    - `SPOTIPY_REDIRECT_URI`
@@ -20,6 +20,8 @@ The application uses a dark themed PySimpleGUI interface and can be turned into 
    ```bash
    python src/main.py
    ```
+   Use the **Settings** button in the GUI to enter credentials if you have not
+   set the environment variables. Values are saved to `~/.mp3organizer_config`.
 
 To build a standalone executable on Windows:
 ```bash
@@ -53,6 +55,7 @@ src/
 - Duplicate tracks are skipped and Spotify playlists split every 10,000 songs.
 - ID3 tags and filenames are corrected when recognized through audD.
 - A progress bar shows percentage and estimated remaining time.
+
 - Generates an HTML report of processed files including album, year and genre
   metadata, and allows audio preview directly in the browser.
 
@@ -62,3 +65,15 @@ After processing, a `report.html` file is created in the output folder. It lists
 each track with artist, title, album, year, genre and the destination folder.
 Every row also contains an embedded audio player so the resulting files can be
 played without leaving the browser.
+
+- Generates an HTML report of processed files.
+
+## Running Tests
+
+Install the dependencies and execute `pytest` from the project root:
+
+```bash
+pip install -r requirements.txt
+pytest
+```
+

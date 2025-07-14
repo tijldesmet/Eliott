@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -76,22 +75,20 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             if not match:
                 match = fuzzy_search(sp, cache, f'{artist} {title}', on_wait=on_wait)
         if not match:
-            api_key = os.getenv('AUDD_API_KEY')
-            if api_key:
-                ra, rt = recognize(str(file), api_key)
-                if ra and rt:
-                    match = search(sp, cache, ra, rt, on_wait=on_wait)
-                    if not match:
-                        match = fuzzy_search(sp, cache, f'{ra} {rt}', on_wait=on_wait)
-                    artist = ra
-                    title = rt
-                    try:
-                        tags = EasyID3(file)
-                    except ID3NoHeaderError:
-                        tags = EasyID3()
-                    tags['artist'] = artist.title()
-                    tags['title'] = title.title()
-                    tags.save(file)
+            ra, rt = recognize(str(file))
+            if ra and rt:
+                match = search(sp, cache, ra, rt, on_wait=on_wait)
+                if not match:
+                    match = fuzzy_search(sp, cache, f'{ra} {rt}', on_wait=on_wait)
+                artist = ra
+                title = rt
+                try:
+                    tags = EasyID3(file)
+                except ID3NoHeaderError:
+                    tags = EasyID3()
+                tags['artist'] = artist.title()
+                tags['title'] = title.title()
+                tags.save(file)
 
         if match:
             track_id = match['id']
@@ -137,3 +134,4 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
 
     write_html_report(entries, dst / 'report.html')
     save_cache(cache)
+
