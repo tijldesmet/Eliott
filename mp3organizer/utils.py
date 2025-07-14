@@ -21,3 +21,13 @@ def save_cache(cache):
 
 def sanitize_filename(name: str) -> str:
     return ''.join(c for c in name if c.isalnum() or c in (' ', '-', '_')).title()
+
+
+def unique_path(path: Path) -> Path:
+    """Return a unique file path by appending a numeric suffix if needed."""
+    candidate = path
+    counter = 1
+    while candidate.exists():
+        candidate = path.with_name(f"{path.stem}_{counter}{path.suffix}")
+        counter += 1
+    return candidate
