@@ -15,7 +15,9 @@ def main():
         [sg.Text('', size=(60, 1), key='STATUS')],
     ]
 
+
     window = sg.Window('Eliott', layout, finalize=True)
+ main
 
     def show_settings():
         cfg = load_config()
