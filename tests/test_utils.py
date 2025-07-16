@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-import mp3organizer.utils as utils
+import eliott.utils as utils
 
 
 def test_sanitize_filename():
@@ -24,3 +24,15 @@ def test_load_save_cache(tmp_path, monkeypatch):
 
     loaded = utils.load_cache()
     assert loaded == data
+
+
+def test_unique_path(tmp_path):
+    orig = tmp_path / "song.mp3"
+    orig.touch()
+
+    path1 = utils.unique_path(orig)
+    assert path1.name == "song_1.mp3"
+    path1.touch()
+
+    path2 = utils.unique_path(orig)
+    assert path2.name == "song_2.mp3"
