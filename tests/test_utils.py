@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-import mp3organizer.utils as utils
+import eliott.utils as utils
 
 
 def test_sanitize_filename():

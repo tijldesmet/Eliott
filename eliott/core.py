@@ -75,7 +75,9 @@ def process(src: Path, dst: Path, window: Optional[object] = None):
             if not match:
                 match = fuzzy_search(sp, cache, f'{artist} {title}', on_wait=on_wait)
         if not match:
-            ra, rt = recognize(str(file))
+            # Pass ``None`` explicitly so tests with monkeypatched recognize
+            # function expecting two arguments continue to work.
+            ra, rt = recognize(str(file), None)
             if ra and rt:
                 match = search(sp, cache, ra, rt, on_wait=on_wait)
                 if not match:

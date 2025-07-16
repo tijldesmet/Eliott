@@ -21,7 +21,7 @@ The application uses a dark themed PySimpleGUI interface and can be turned into 
    python src/main.py
    ```
    Use the **Settings** button in the GUI to enter credentials if you have not
-   set the environment variables. Values are saved to `~/.mp3organizer_config`.
+   set the environment variables. Values are saved to `~/.eliott_config`.
 
 To build a standalone executable on Windows:
 ```bash
@@ -32,7 +32,7 @@ The resulting `dist/main.exe` can be used directly.
 ## Project Structure
 
 ```
-mp3organizer/
+eliott/
     __init__.py
     audd.py          # audD.io helper
     core.py          # file processing logic

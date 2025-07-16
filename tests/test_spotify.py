@@ -1,4 +1,4 @@
-import mp3organizer.spotify as spotify
+import eliott.spotify as spotify
 
 class DummySp:
     def __init__(self):
