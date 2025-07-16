@@ -1,4 +1,4 @@
-# MP3 Playlist Organizer
+# Eliott MP3 Playlist Organizer
 
 This project helps organize a collection of MP3 files and create Spotify playlists. Files that cannot be matched are moved to a `Napster` folder with a local playlist.
 
@@ -25,9 +25,9 @@ The application uses a dark themed PySimpleGUI interface and can be turned into 
 
 To build a standalone executable on Windows:
 ```bash
-pyinstaller --onefile -w src/main.py
+pyinstaller --onefile -w src/main.py --name eliott
 ```
-The resulting `dist/main.exe` can be used directly.
+The resulting `dist/eliott.exe` can be used directly.
 
 ## Project Structure
 

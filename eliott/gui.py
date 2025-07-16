@@ -15,13 +15,13 @@ def main():
         [sg.Text('', size=(60, 1), key='STATUS')],
     ]
 
-    window = sg.Window('MP3 Organizer', layout, finalize=True)
+
 
     def show_settings():
         cfg = load_config()
         layout = [
             [sg.Text('SPOTIPY_CLIENT_ID'), sg.Input(cfg.get('SPOTIPY_CLIENT_ID', ''), key='CID')],
-            [sg.Text('SPOTIPY_CLIENT_SECRET'), sg.Input(cfg.get('SPOTIPY_CLIENT_SECRET', ''), key='SECRET')],
+
             [sg.Text('SPOTIPY_REDIRECT_URI'), sg.Input(cfg.get('SPOTIPY_REDIRECT_URI', ''), key='REDIRECT')],
             [sg.Text('AUDD_API_KEY'), sg.Input(cfg.get('AUDD_API_KEY', ''), key='AUDD')],
             [sg.Button('Save'), sg.Button('Cancel')],
